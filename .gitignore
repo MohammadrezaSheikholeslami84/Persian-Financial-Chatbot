@@ -1,0 +1,56 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local environment / editor
+.vscode/
+
+
+# Database and models
+financial_data.db
+lstm_model.pth
+lstm_pct_model.pth
+scaler.pkl
+scaler_pct.pkl
+
+# Static generated files
+static/
+
+# Virtual environments
+.env
+.venv/
+venv/
+env/
+
+# Environment variables
+*.env
+
+# Databases (local only, don’t commit)
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Jupyter Notebooks (optional – keep if important)
+*.ipynb
+
+# Compiled / build files
+build/
+dist/
+*.egg-info/
+
+# IDE settings
+.vscode/
+.idea/
+
+# Streamlit / cache
+.streamlit/
+
+# Auto-generated charts
+my_chatbot_website/static/charts/*.png
+
+# OS files
+.DS_Store
+Thumbs.db
