@@ -1,0 +1,44 @@
+{
+    "MARKET_URLS": {
+        "سکه امامی": "https://www.tgju.org/coin",
+        "سکه بهار آزادی": "https://www.tgju.org/coin",
+        "نیم سکه": "https://www.tgju.org/coin",
+        "ربع سکه": "https://www.tgju.org/coin",
+        "سکه گرمی": "https://www.tgju.org/coin",
+        "طلای 18 عیار / 750": "https://www.tgju.org/gold-chart",
+        "طلای 18 عیار / 740": "https://www.tgju.org/gold-chart",
+        "طلای ۲۴ عیار": "https://www.tgju.org/gold-chart",
+        "مثقال طلا": "https://www.tgju.org/gold-chart",
+        "آبشده نقدی": "https://www.tgju.org/gold-chart",
+        "آبشده بنکداری": "https://www.tgju.org/gold-chart",
+        "انس طلا": "https://www.tgju.org/gold-global",
+        "انس نقره": "https://www.tgju.org/gold-global",
+        "انس پلاتین": "https://www.tgju.org/gold-global",
+        "انس پالادیوم": "https://www.tgju.org/gold-global"
+    },
+    "mapping":{
+        "سکه": "سکه امامی",
+        "طلا": "انس طلا",
+        "نقره": "انس نقره",
+        "پلاتین": "انس پلاتین",
+        "پالادیوم": "انس پالادیوم"
+    },
+   "MARKET__HISTORY_URLS": {
+    "سکه": "https://api.tgju.org/v1/market/indicator/summary-table-data/sekee",
+    "سکه امامی": "https://api.tgju.org/v1/market/indicator/summary-table-data/sekee",
+    "سکه بهار آزادی": "https://api.tgju.org/v1/market/indicator/summary-table-data/sekeb",
+    "نیم سکه": "https://api.tgju.org/v1/market/indicator/summary-table-data/nim",
+    "ربع سکه": "https://api.tgju.org/v1/market/indicator/summary-table-data/rob",
+    "سکه گرمی": "https://api.tgju.org/v1/market/indicator/summary-table-data/gerami",
+    "طلای ۱۸ عیار / 750": "https://api.tgju.org/v1/market/indicator/summary-table-data/ggold_750k",
+    "طلای ۱۸ عیار / 740": "https://api.tgju.org/v1/market/indicator/summary-table-data/gold_740k",
+    "طلای ۲۴ عیار": "https://api.tgju.org/v1/market/indicator/summary-table-data/geram24",
+    "مثقال طلا": "https://api.tgju.org/v1/market/indicator/summary-table-data/mesghal",
+    "آبشده نقدی": "https://api.tgju.org/v1/market/indicator/summary-table-data/gold_futures",
+    "آبشده بنکداری": "https://api.tgju.org/v1/market/indicator/summary-table-data/gold_melted_wholesale",
+    "انس طلا": "https://api.tgju.org/v1/market/indicator/summary-table-data/ons",
+    "انس نقره": "https://api.tgju.org/v1/market/indicator/summary-table-data/silver",
+    "انس پلاتین": "https://api.tgju.org/v1/market/indicator/summary-table-data/platinum",
+    "انس پالادیوم": "https://api.tgju.org/v1/market/indicator/summary-table-data/palladium"
+}
+}
