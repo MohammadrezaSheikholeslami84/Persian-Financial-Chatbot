@@ -1,0 +1,22 @@
+{
+    "cryptocurrency_history_data_links": {
+     "بیت کوین": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-bitcoin",
+    "بیتکوین": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-bitcoin",
+    "اتریوم": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-ethereum",
+    "لایت کوین": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-litecoin",
+    "بیت کوین کش": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-bitcoin-cash",
+    "تتر": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-tether",
+    "ترون": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-tron",
+    "بایننس کوین": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-binance-coin",
+    "استلار": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-stellar",
+    "ریپل": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-ripple",
+    "دوج کوین": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-dogecoin",
+    "دش": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-dash",
+    "کاردانو": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-cardano",
+    "پولکادات": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-polkadot",
+    "سولانا": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-solana",
+    "آوالانچ": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-avalanche",
+    "شیبا اینو": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-shiba-inu",
+    "تون‌کوین": "https://api.tgju.org/v1/market/indicator/summary-table-data/crypto-toncoin"}
+
+}
