@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>چت‌بات مالی</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --background-color: #f8f9fa;
+            --container-bg: #ffffff;
+            --header-bg: #0d2137;
+            --bot-bubble-bg: #eef1f5;
+            --user-bubble-bg: linear-gradient(135deg, #007bff, #0056b3);
+            --text-color-dark: #2c3e50;
+            --text-color-light: #ffffff;
+            --border-color: #e0e4e8;
+            --font-family: "Vazirmatn", sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .chat-container {
+            width: 95%;
+            max-width: 700px;
+            height: 90vh;
+            background-color: var(--container-bg);
+            border-radius: 24px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .chat-header h1 {
+            margin: 0;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-color-light);
+        }
+
+        .chat-history {
+            flex-grow: 1;
+            padding: 25px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chat-bubble {
+            max-width: 85%;
+            padding: 12px 20px;
+            border-radius: 18px;
+            line-height: 1.7;
+            font-size: 1.1rem;
+            opacity: 0;
+            transform: scale(0.95);
+            animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            position: relative;
+        }
+
+        .user-bubble {
+            background: var(--user-bubble-bg);
+            color: var(--text-color-light);
+            align-self: flex-end;
+            border-bottom-right-radius: 6px;
+        }
+
+        .bot-bubble {
+            background-color: var(--bot-bubble-bg);
+            color: var(--text-color-dark);
+            align-self: flex-start;
+            border-bottom-left-radius: 6px;
+        }
+
+        .bot-bubble ul, .bot-bubble ol { padding-right: 20px; }
+        .bot-bubble strong { color: #0056b3; }
+
+        .image-bubble {
+            padding: 8px;
+        }
+
+        .image-bubble img {
+            max-width: 100%;
+            border-radius: 12px;
+            display: block;
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background-color: #fff;
+        }
+
+        #message-input {
+            flex-grow: 1;
+            border: none;
+            background-color: #f0f2f5;
+            border-radius: 25px;
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            font-family: var(--font-family);
+            transition: box-shadow 0.2s;
+        }
+        #message-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2); }
+
+        .button {
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            color: white;
+        }
+        .button:hover { transform: scale(1.1); }
+        .button:disabled { background: #adb5bd; cursor: not-allowed; transform: none; }
+
+        #send-button { background: var(--user-bubble-bg); margin-right: 15px; }
+        #mic-button { background-color: #6c757d; margin-right: 10px; }
+        #mic-button.recording { background-color: #dc3545; animation: pulse 1.5s infinite; }
+
+        /* استایل‌های جدید */
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        .chip {
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 6px 14px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .chip:hover { background-color: #fff; }
+
+        .typing-indicator {
+            padding: 18px 20px;
+        }
+        .typing-indicator .dot {
+            display: inline-block;
+            width: 8px; height: 8px; border-radius: 50%;
+            background-color: #999;
+            margin: 0 2px;
+            animation: wave 1.3s linear infinite;
+        }
+        .typing-indicator .dot:nth-child(2) { animation-delay: -1.1s; }
+        .typing-indicator .dot:nth-child(3) { animation-delay: -0.9s; }
+
+        @keyframes pop-in { to { opacity: 1; transform: scale(1); } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+        @keyframes wave { 0%, 60%, 100% { transform: initial; } 30% { transform: translateY(-8px); } }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header"><h1>چت‌بات هوشمند مالی</h1></div>
+        <div class="chat-history" id="chat-history">
+            <div class="chat-bubble bot-bubble">
+                سلام! می‌توانید پیام متنی ارسال کنید یا با دکمه میکروفون، صدایتان را ضبط کنید.
+                <div class="suggestion-chips">
+                    <button class="chip">قیمت دلار امروز؟</button>
+                    <button class="chip">نمودار شاخص کل</button>
+                    <button class="chip">آخرین اخبار اپل</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-bubble bot-bubble typing-indicator" id="typing-indicator" style="display: none;">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+
+        <div class="input-area">
+            <button id="mic-button" class="button"><i class="fas fa-microphone"></i></button>
+            <input type="text" id="message-input" placeholder="پیام خود را بنویسید..." />
+            <button id="send-button" class="button" disabled><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script>
+        const chatHistory = document.getElementById("chat-history");
+        const messageInput = document.getElementById("message-input");
+        const sendButton = document.getElementById("send-button");
+        const micButton = document.getElementById("mic-button");
+        const typingIndicator = document.getElementById("typing-indicator");
+        
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        // --- Event Listeners ---
+        micButton.addEventListener("click", toggleRecording);
+        sendButton.addEventListener("click", handleSendMessage);
+        messageInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                handleSendMessage();
+            }
+        });
+        messageInput.addEventListener("input", () => {
+            sendButton.disabled = messageInput.value.trim() === "";
+        });
+        document.querySelector('.suggestion-chips').addEventListener('click', (event) => {
+            if (event.target.classList.contains('chip')) {
+                messageInput.value = event.target.textContent;
+                sendButton.disabled = false;
+                handleSendMessage();
+            }
+        });
+
+        // --- Voice Recording Logic ---
+        async function toggleRecording() {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
+                    mediaRecorder.onstop = sendAudioToServer;
+                    mediaRecorder.start();
+                    
+                    micButton.classList.add("recording");
+                    micButton.innerHTML = '<i class="fas fa-stop"></i>';
+                    isRecording = true;
+                    messageInput.placeholder = "در حال ضبط... برای توقف کلیک کنید";
+                    messageInput.disabled = true;
+                } catch (err) {
+                    console.error("Error accessing microphone:", err);
+                    alert("امکان دسترسی به میکروفون وجود ندارد. لطفاً مجوز لازم را فعال کنید.");
+                }
+            } else {
+                mediaRecorder.stop();
+                micButton.classList.remove("recording");
+                micButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; // Loading spinner
+                isRecording = false;
+                messageInput.placeholder = "در حال پردازش صدا...";
+            }
+        }
+
+        async function sendAudioToServer() {
+            const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+            audioChunks = [];
+
+            const formData = new FormData();
+            formData.append("audio_data", audioBlob);
+
+            try {
+                const response = await fetch("/transcribe", { method: "POST", body: formData });
+                if (!response.ok) throw new Error(`Server error: ${response.statusText}`);
+
+                const data = await response.json();
+                if (data.transcribed_text) {
+                    messageInput.value = data.transcribed_text;
+                    await handleSendMessage();
+                } else if (data.error) {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error("Error transcribing audio:", error);
+                appendMessage(`خطا در تبدیل صدا: ${error.message}`, "bot");
+            } finally {
+                resetInputArea();
+            }
+        }
+        
+        // --- Chat Messaging Logic ---
+        async function handleSendMessage() {
+            const message = messageInput.value.trim();
+            if (message === "") return;
+
+            appendMessage(message, "user");
+            messageInput.value = "";
+            sendButton.disabled = true;
+            
+            showTypingIndicator();
+
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: message }),
+                });
+                const data = await response.json();
+
+                if (data.type === "image") {
+                    appendImageMessage(data.url, data.alt_text);
+                } else if (data.type === "text") {
+                    // تبدیل پاسخ markdown به HTML
+                    const formattedContent = marked.parse(data.content);
+                    appendMessage(formattedContent, "bot", true);
+                }
+            } catch (error) {
+                console.error("Error fetching bot response:", error);
+                appendMessage("متاسفانه در ارتباط با سرور مشکلی پیش آمد.", "bot");
+            } finally {
+                hideTypingIndicator();
+            }
+        }
+
+        // --- UI Helper Functions ---
+        function appendMessage(content, sender, isHTML = false) {
+            const bubble = document.createElement("div");
+            bubble.classList.add("chat-bubble", sender === "user" ? "user-bubble" : "bot-bubble");
+            if (isHTML) {
+                bubble.innerHTML = content;
+            } else {
+                bubble.textContent = content;
+            }
+            chatHistory.appendChild(bubble);
+            scrollToBottom();
+        }
+
+        function appendImageMessage(url, altText) {
+            const bubble = document.createElement("div");
+            bubble.classList.add("chat-bubble", "bot-bubble", "image-bubble");
+            const image = document.createElement("img");
+            image.src = url;
+            image.alt = altText;
+            bubble.appendChild(image);
+            chatHistory.appendChild(bubble);
+            scrollToBottom();
+        }
+
+        function resetInputArea() {
+            micButton.innerHTML = '<i class="fas fa-microphone"></i>';
+            messageInput.placeholder = "پیام خود را بنویسید...";
+            messageInput.disabled = false;
+        }
+        
+        function showTypingIndicator() {
+            typingIndicator.style.display = 'flex';
+            scrollToBottom();
+        }
+        
+        function hideTypingIndicator() {
+            typingIndicator.style.display = 'none';
+        }
+
+        function scrollToBottom() {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+    </script>
+</body>
+</html>
