@@ -1,44 +1,25 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, WebRtcMode
-import io
-import torch
 import time
-import whisper
-from pydub import AudioSegment
 # Let's assume these are your actual, non-mocked modules
 from financial_core import process_request
 from gmini import rag_response
-
-# -----------------------------
-# Cached function to load the Whisper model.
-# Using st.cache_resource ensures the model is loaded only once.
-# -----------------------------
-@st.cache_resource
-def load_whisper(device="cpu"):
-    """Loads the Whisper model onto the specified device."""
-    return whisper.load_model("large", device=device)
 
 # -----------------------------
 # Main Application Class
 # -----------------------------
 class App:
     def __init__(self):
-        """Initializes the application, sets up the page configuration, and loads models."""
+        """Initializes the application and sets up the page configuration."""
         st.set_page_config(
             page_title="چت‌بات هوشمند مالی",
             page_icon="🤖",
             layout="centered",
-            initial_sidebar_state="expanded"
+            initial_sidebar_state="collapsed"
         )
         
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        
-        with st.spinner("در حال بارگذاری مدل Whisper..."):
-            self.whisper_model = load_whisper(self.device)
-
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = [
-                {"role": "assistant", "content": "سلام! می‌توانید پیام متنی ارسال کنید یا با دکمه میکروفون، صدایتان را ضبط کنید."}
+                {"role": "assistant", "content": "سلام! چطور می‌توانم در امور مالی به شما کمک کنم؟"}
             ]
 
     def apply_custom_styles(self):
@@ -60,13 +41,13 @@ class App:
                 }
 
                 html, body, [class*="st-"], .stApp {
-                    font-family: var(--font-family);
+                    font-family: var(--font-family) !important;
                     background-color: var(--background-color) !important; 
                 }
 
                 /* --- Main Chat Container --- */
                 [data-testid="stAppViewContainer"] > .main > div:first-child {
-                    background-color: var(--container-bg);
+                    background-color: var(--container-bg) !important;
                     border-radius: 24px;
                     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
                     padding: 0;
@@ -75,14 +56,14 @@ class App:
                 
                 /* --- Custom Header --- */
                 div[data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"]:first-child {
-                    background-color: var(--header-bg);
+                    background-color: var(--header-bg) !important;
                     padding: 1.5rem;
                     border-top-left-radius: 24px;
                     border-top-right-radius: 24px;
                 }
                 
                 div[data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"]:first-child h1 {
-                    color: var(--text-color-light);
+                    color: var(--text-color-light) !important;
                     font-size: 1.6rem;
                     width: 100%;
                     text-align: center;
@@ -90,7 +71,7 @@ class App:
 
                 /* --- Chat Input --- */
                 div[data-testid="stChatInput"] {
-                    background-color: var(--container-bg);
+                    background-color: var(--container-bg) !important;
                     border-bottom-left-radius: 24px;
                     border-bottom-right-radius: 24px;
                     border-top: 1px solid var(--border-color);
@@ -98,7 +79,7 @@ class App:
                 div[data-testid="stChatInput"] textarea {
                     background-color: #f0f2f5 !important;
                     color: var(--text-color-dark) !important;
-                    border: none;
+                    border: none !important;
                     border-radius: 25px;
                     direction: rtl !important;
                 }
@@ -116,35 +97,31 @@ class App:
                     box-shadow: none !important;
                 }
 
-                [data-testid="stChatMessage"] > div[data-testid="stHorizontalBlock"] > div[data-testid="stMarkdownContainer"] {
-                    padding: 12px 20px;
-                    border-radius: 18px;
-                    line-height: 1.7;
-                    font-size: 1.1rem;
-                    width: 100%;
+                /* This is the container for the message content */
+                .st-emotion-cache-1c7y2kd {
+                    padding: 12px 20px !important;
+                    border-radius: 18px !important;
+                    line-height: 1.7 !important;
+                    font-size: 1.1rem !important;
+                    width: 100% !important;
                 }
                 
                 /* Bot Bubble */
-                div[data-testid="stChatMessage"]:has(div[data-user-scroll-id="assistant"]) div[data-testid="stMarkdownContainer"] {
+                div[data-user-scroll-id="assistant"] .st-emotion-cache-1c7y2kd {
                     background-color: var(--bot-bubble-bg) !important;
                     color: var(--text-color-dark) !important;
-                    border-bottom-left-radius: 6px;
+                    border-bottom-left-radius: 6px !important;
                 }
 
                 /* User Bubble */
-                 div[data-testid="stChatMessage"]:has(div[data-user-scroll-id="user"]) div[data-testid="stMarkdownContainer"] {
+                 div[data-user-scroll-id="user"] .st-emotion-cache-1c7y2kd {
                     background: var(--user-bubble-bg) !important;
                     color: var(--text-color-light) !important;
-                    border-bottom-right-radius: 6px;
+                    border-bottom-right-radius: 6px !important;
                 }
                 
                 /* RTL and Color Fix for all message content */
-                div[data-testid="stMarkdownContainer"] p,
-                div[data-testid="stMarkdownContainer"] ul,
-                div[data-testid="stMarkdownContainer"] ol,
-                div[data-testid="stMarkdownContainer"] li,
-                div[data-testid="stMarkdownContainer"] strong,
-                div[data-testid="stMarkdownContainer"] em {
+                .st-emotion-cache-1c7y2kd * {
                     color: inherit !important;
                     direction: rtl !important;
                     text-align: right !important;
@@ -152,18 +129,18 @@ class App:
 
                 /* --- Suggestion Chips --- */
                 .stButton > button {
-                    background-color: rgba(0, 0, 0, 0.05);
-                    border: 1px solid var(--border-color);
-                    border-radius: 16px;
-                    padding: 6px 14px;
-                    font-size: 0.9rem;
-                    color: var(--text-color-dark);
+                    background-color: rgba(0, 0, 0, 0.05) !important;
+                    border: 1px solid var(--border-color) !important;
+                    border-radius: 16px !important;
+                    padding: 6px 14px !important;
+                    font-size: 0.9rem !important;
+                    color: var(--text-color-dark) !important;
                     transition: background-color 0.2s;
                     font-weight: 500;
                 }
                 .stButton > button:hover {
-                    background-color: rgba(0, 0, 0, 0.1);
-                    border-color: #007bff;
+                    background-color: rgba(0, 0, 0, 0.1) !important;
+                    border-color: #007bff !important;
                 }
 
             </style>
@@ -177,52 +154,12 @@ class App:
             yield word + " "
             time.sleep(0.05)
 
-    def handle_voice_input(self):
-        """Manages the voice input functionality in the sidebar."""
-        st.sidebar.header("🎙️ ورودی صوتی")
-        st.sidebar.info("برای صحبت کردن روی 'START' کلیک کنید و پس از اتمام، 'STOP' را بزنید.")
-        # ... (voice handling logic remains the same)
-        webrtc_ctx = webrtc_streamer(
-            key="microphone",
-            mode=WebRtcMode.SENDONLY,
-            rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-            media_stream_constraints={"audio": True, "video": False},
-        )
-        if not webrtc_ctx.state.playing: return
-        st.sidebar.info("در حال گوش دادن...")
-        if 'audio_buffer' not in st.session_state: st.session_state.audio_buffer = io.BytesIO()
-        if webrtc_ctx.audio_receiver:
-            try:
-                audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-                for frame in audio_frames:
-                    sound = AudioSegment(data=frame.to_ndarray().tobytes(), sample_width=frame.format.bytes, frame_rate=frame.sample_rate, channels=len(frame.layout.channels))
-                    st.session_state.audio_buffer.write(sound.raw_data)
-            except Exception as e: st.sidebar.error(f"خطا در دریافت صدا: {e}")
-        if st.sidebar.button("پردازش صدا"):
-            if st.session_state.audio_buffer.tell() > 0:
-                with st.spinner("در حال تبدیل صدا به متن..."):
-                    st.session_state.audio_buffer.seek(0)
-                    audio_segment = AudioSegment.from_raw(st.session_state.audio_buffer, sample_width=2, frame_rate=48000, channels=1)
-                    wav_buffer = io.BytesIO()
-                    audio_segment.export(wav_buffer, format="wav")
-                    wav_buffer.seek(0)
-                    result = self.whisper_model.transcribe(wav_buffer, language="fa", fp16=torch.cuda.is_available())
-                    transcribed_text = result["text"]
-                st.session_state.audio_buffer = io.BytesIO()
-                if transcribed_text:
-                    st.sidebar.success("صدا با موفقیت پردازش شد.")
-                    st.session_state.user_input_to_process = transcribed_text
-                    st.rerun()
-                else: st.sidebar.warning("متنی تشخیص داده نشد. لطفا دوباره تلاش کنید.")
-
     def run(self):
         """The main function to run the Streamlit application UI."""
         self.apply_custom_styles()
         
         st.title("چت‌بات هوشمند مالی")
         
-        self.handle_voice_input()
-
         # Display chat history
         for message in st.session_state.chat_history:
             with st.chat_message(message["role"]):
@@ -234,14 +171,14 @@ class App:
             suggestions = ["قیمت دلار امروز؟", "نمودار شاخص کل", "آخرین اخبار اپل"]
             for i, suggestion in enumerate(suggestions):
                 if cols[i].button(suggestion, use_container_width=True):
-                    st.session_state.user_input_to_process = suggestion
+                    st.session_state.chip_input = suggestion
                     st.rerun()
 
         user_input = None
         if prompt := st.chat_input("پیام خود را بنویسید..."):
             user_input = prompt
-        elif "user_input_to_process" in st.session_state:
-            user_input = st.session_state.pop("user_input_to_process")
+        elif "chip_input" in st.session_state:
+            user_input = st.session_state.pop("chip_input")
 
         if user_input:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
