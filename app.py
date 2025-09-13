@@ -10,7 +10,7 @@ import financial_core as func
 from transformers import WhisperProcessor, WhisperForConditionalGeneration
 import torch
 import torchaudio
-
+import gmini
 '''
 print("Loading HuggingFace Whisper model (large-fa)...")
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -96,11 +96,13 @@ def chat():
 
     bot_response_data = func.process_request(user_message)
     response_type = bot_response_data.get("type")
+    output_text = gmini.rag_response(user_message,bot_response_data.get("text"))
+    print(output_text)
 
     if response_type == "text":
         return jsonify({
             "type": "text",
-            "content": bot_response_data.get("text", "خطایی در پردازش متن رخ داد."),
+            "content": output_text,
         })
 
     elif response_type == "image":

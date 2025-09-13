@@ -37,6 +37,8 @@ def get_iran_index_data(input_index):
         "شاخص فرابورس": "شاخص کل فرابورس",
         "شاخص هم وزن": "شاخص قیمت (هم وزن)",
     }
+
+    
     index_name = indexs.get(input_index)
     index_link = "https://databourse.ir/indices"
 
