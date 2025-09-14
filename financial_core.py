@@ -172,7 +172,7 @@ def extract_features(user_input):
             # Iranian Symbols (فولاد، بکام ...)
             for symbol in iran_symbols_keywords:
                 pattern = rf"\b{re.escape(symbol)}\b"
-                if re.search(pattern, user_input) and symbol not in extracted_features["symbols"] and "سهام" in user_input:
+                if re.search(pattern, user_input) and symbol not in extracted_features["symbols"] and  ("سهام" in user_input or "سهم" in user_input or "نماد" in user_input):
                     extracted_features["sub_type"] = "Iran Symbol"
                     extracted_features["symbols"].append(symbol)
 
