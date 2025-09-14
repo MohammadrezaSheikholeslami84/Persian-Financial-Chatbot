@@ -23,33 +23,35 @@ class App:
             ]
 
     def apply_custom_styles(self):
-        """Applies custom CSS inspired by the provided HTML for a light, modern theme."""
+        """Applies custom CSS for a Gemini-like dark theme."""
         st.markdown("""
             <style>
                 @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap');
                 
                 :root {
-                    --background-color: #f8f9fa;
-                    --container-bg: #ffffff;
-                    --header-bg: #0d2137;
-                    --bot-bubble-bg: #eef1f5;
-                    --user-bubble-bg: linear-gradient(135deg, #007bff, #0056b3);
-                    --text-color-dark: #2c3e50;
-                    --text-color-light: #ffffff;
-                    --border-color: #e0e4e8;
+                    --background-color: #131314;      /* Gemini Dark Background */
+                    --container-bg: #1e1f20;          /* Gemini UI Elements Background */
+                    --header-bg: #1e1f20;              /* Header Background */
+                    --bot-bubble-bg: #2a2a2e;           /* Bot message background */
+                    --user-bubble-bg: #0b57d0;          /* User message background (Vibrant Blue) */
+                    --text-color-dark: #e3e3e3;         /* Main light text color */
+                    --text-color-light: #ffffff;       /* Brighter text color */
+                    --border-color: #3c4043;           /* Borders */
                     --font-family: "Vazirmatn", sans-serif;
                 }
+
 
                 html, body, [class*="st-"], .stApp {
                     font-family: var(--font-family) !important;
                     background-color: var(--background-color) !important; 
+                    color: var(--text-color-dark) !important;
                 }
 
                 /* --- Main Chat Container --- */
                 [data-testid="stAppViewContainer"] > .main > div:first-child {
                     background-color: var(--container-bg) !important;
                     border-radius: 24px;
-                    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+                    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25); /* Adjusted shadow for dark theme */
                     padding: 0;
                     margin: 1rem;
                 }
@@ -77,17 +79,18 @@ class App:
                     border-top: 1px solid var(--border-color);
                 }
                 div[data-testid="stChatInput"] textarea {
-                    background-color: #f0f2f5 !important;
+                    background-color: #2a2a2e !important; /* Dark input field */
                     color: var(--text-color-dark) !important;
                     border: none !important;
                     border-radius: 25px;
                     direction: rtl !important;
                 }
                 div[data-testid="stChatInput"] textarea:focus {
-                    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2) !important;
+                    box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.5) !important; /* Gemini-like focus ring */
                 }
                 div[data-testid="stChatInput"] textarea::placeholder {
                     text-align: right !important;
+                    color: #9aa0a6; /* Lighter placeholder text */
                 }
 
                 /* --- Chat Messages --- */
@@ -97,31 +100,31 @@ class App:
                     box-shadow: none !important;
                 }
 
-                /* This is the container for the message content */
-                .st-emotion-cache-1c7y2kd {
+                /* General bubble styling using stable test-ids */
+                [data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
                     padding: 12px 20px !important;
                     border-radius: 18px !important;
                     line-height: 1.7 !important;
                     font-size: 1.1rem !important;
                     width: 100% !important;
                 }
-                
+
                 /* Bot Bubble */
-                div[data-user-scroll-id="assistant"] .st-emotion-cache-1c7y2kd {
+                div[data-testid="stChatMessage"]:has(div[data-user-scroll-id="assistant"]) [data-testid="stMarkdownContainer"] {
                     background-color: var(--bot-bubble-bg) !important;
                     color: var(--text-color-dark) !important;
                     border-bottom-left-radius: 6px !important;
                 }
 
                 /* User Bubble */
-                 div[data-user-scroll-id="user"] .st-emotion-cache-1c7y2kd {
+                div[data-testid="stChatMessage"]:has(div[data-user-scroll-id="user"]) [data-testid="stMarkdownContainer"] {
                     background: var(--user-bubble-bg) !important;
                     color: var(--text-color-light) !important;
                     border-bottom-right-radius: 6px !important;
                 }
                 
                 /* RTL and Color Fix for all message content */
-                .st-emotion-cache-1c7y2kd * {
+                [data-testid="stMarkdownContainer"] * {
                     color: inherit !important;
                     direction: rtl !important;
                     text-align: right !important;
@@ -129,7 +132,7 @@ class App:
 
                 /* --- Suggestion Chips --- */
                 .stButton > button {
-                    background-color: rgba(0, 0, 0, 0.05) !important;
+                    background-color: #2a2a2e !important; /* Dark chips */
                     border: 1px solid var(--border-color) !important;
                     border-radius: 16px !important;
                     padding: 6px 14px !important;
@@ -139,8 +142,8 @@ class App:
                     font-weight: 500;
                 }
                 .stButton > button:hover {
-                    background-color: rgba(0, 0, 0, 0.1) !important;
-                    border-color: #007bff !important;
+                    background-color: #3c4043 !important; /* Darker hover */
+                    border-color: #8ab4f8 !important; /* Gemini blue for hover border */
                 }
 
             </style>
