@@ -7,7 +7,7 @@ import database_store
 import financial_core
 
 
-def get_iran_symbol_data(input_symbol):
+def get_iran_symbol2_data(input_symbol):
     """Fetch current Iranian symbol data from BrsApi."""
     api_key = "FreeBvt6cnOYtMgfj8GQP5GSuIy8LUh5"
     url = f"https://BrsApi.ir/Api/Tsetmc/AllSymbols.php?key={api_key}"
@@ -55,7 +55,7 @@ def get_iran_symbol_data(input_symbol):
         return {"error": str(e)}
 
 
-def get_iran_symbol_data2(input_symbol, timeout=5):
+def get_iran_symbol_data(input_symbol, timeout=5):
     
     """Fetch current Iranian symbol data from shakhesban."""
 
