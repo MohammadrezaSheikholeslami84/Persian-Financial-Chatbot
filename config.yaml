@@ -1,0 +1,13 @@
+cookie:
+  expiry_days: 30
+  key: a_secret_key_123
+  name: financial_chatbot_cookie
+credentials:
+  usernames:
+    mrsh84210:
+      email: sampad1384@gmail.com
+      name: mohammadreza sheikholeslami
+      password: $2b$12$Eyd2.KxRlEH71f/p52c7zuoEDsjcS8rFo28QANerpMSDHZtTO9biq
+preauthorized:
+  emails:
+  - sampad1384@gmail.com
