@@ -7,6 +7,7 @@ import streamlit_authenticator as stauth
 from yaml.loader import SafeLoader
 from financial_core import process_request
 from gmini import rag_response
+from io import BytesIO
 
 # ------------------------------
 # مدیریت پایگاه داده
@@ -14,7 +15,6 @@ from gmini import rag_response
 DB_FILE = "chat_history_multiuser.db"
 
 def init_db():
-    """ایجاد پایگاه داده و جداول در صورت عدم وجود."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("""
@@ -42,7 +42,6 @@ def init_db():
     conn.close()
 
 def get_session_keys(user_id):
-    """دریافت لیست شناسه‌های سشن‌های یک کاربر خاص."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM sessions WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
@@ -51,7 +50,6 @@ def get_session_keys(user_id):
     return keys
 
 def get_session_title(session_id):
-    """دریافت عنوان یک سشن خاص."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("SELECT title FROM sessions WHERE id=?", (session_id,))
@@ -60,7 +58,6 @@ def get_session_title(session_id):
     return result[0] if result else "گفتگوی حذف شده"
 
 def get_messages(session_id):
-    """دریافت تمام پیام‌های یک سشن خاص."""
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -70,7 +67,6 @@ def get_messages(session_id):
     return messages
 
 def add_session(session_id, user_id, title="گفتگوی جدید..."):
-    """افزودن یک سشن جدید برای یک کاربر."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO sessions (id, user_id, title) VALUES (?, ?, ?)", (session_id, user_id, title))
@@ -78,7 +74,6 @@ def add_session(session_id, user_id, title="گفتگوی جدید..."):
     conn.close()
 
 def update_session_title(session_id, new_title):
-    """به‌روزرسانی عنوان یک سشن."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("UPDATE sessions SET title = ? WHERE id = ?", (new_title, session_id))
@@ -86,18 +81,19 @@ def update_session_title(session_id, new_title):
     conn.close()
 
 def add_message(session_id, message):
-    """افزودن یک پیام جدید به یک سشن."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+    image_bytes = None
+    if message.get("type") == "image" and isinstance(message.get("image"), BytesIO):
+        image_bytes = message["image"].getvalue()
     cursor.execute(
         "INSERT INTO messages (session_id, role, type, content, image_data, caption) VALUES (?, ?, ?, ?, ?, ?)",
-        (session_id, message['role'], message.get('type', 'text'), message.get('content'), message.get('image'), message.get('caption'))
+        (session_id, message['role'], message.get('type', 'text'), message.get('content'), image_bytes, message.get('caption'))
     )
     conn.commit()
     conn.close()
 
 def delete_session_db(session_id):
-    """حذف یک سشن و تمام پیام‌های آن."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
@@ -122,7 +118,6 @@ class App:
             body { direction: rtl; }
             .stButton > button { width: 100%; }
             h1, h2, h3, h4, h5, h6 { text-align: center; }
-            div[data-testid="stSidebarUserContent"] { padding-top: 1rem; }
         </style>
         """, unsafe_allow_html=True)
 
@@ -133,15 +128,10 @@ class App:
             time.sleep(0.05)
 
     def run_chatbot_interface(self, user_id, name, authenticator):
-        """رابط کاربری اصلی چت‌بات که پس از لاگین موفق نمایش داده می‌شود."""
-
         if "session_keys" not in st.session_state or st.session_state.get("current_user") != user_id:
             st.session_state.current_user = user_id
             st.session_state.session_keys = get_session_keys(user_id)
-            if st.session_state.session_keys:
-                st.session_state.active_session = st.session_state.session_keys[0]
-            else:
-                st.session_state.active_session = None
+            st.session_state.active_session = st.session_state.session_keys[0] if st.session_state.session_keys else None
 
         with st.sidebar:
             st.header(f"کاربر: {name}")
@@ -156,18 +146,16 @@ class App:
 
             st.markdown("---")
             st.markdown("##### تاریخچه گفتگوها")
-
             for session_key in st.session_state.session_keys:
                 title = get_session_title(session_key)
-                btn_type = "primary" if session_key == st.session_state.active_session else "secondary"
-                if st.button(title, key=f"btn_{session_key}", use_container_width=True, type=btn_type):
+                if st.button(title, key=f"btn_{session_key}", use_container_width=True):
                     if st.session_state.active_session != session_key:
                         st.session_state.active_session = session_key
                         st.rerun()
 
             if st.session_state.session_keys:
                 st.markdown("---")
-                if st.button("🗑️ حذف گفتگوی فعلی", use_container_width=True, type="secondary"):
+                if st.button("🗑️ حذف گفتگوی فعلی", use_container_width=True):
                     active_key = st.session_state.active_session
                     delete_session_db(active_key)
                     st.session_state.session_keys.remove(active_key)
@@ -183,10 +171,10 @@ class App:
         current_session_messages = get_messages(st.session_state.active_session)
         for message in current_session_messages:
             with st.chat_message(message["role"]):
-                if message.get("type") == "image":
+                if message.get("type") == "image" and message.get("image_data"):
                     st.image(message["image_data"], caption=message.get("caption", ""), use_container_width=True)
                 else:
-                    st.markdown(message["content"])
+                    st.markdown(message.get("content", ""))
 
         if user_input := st.chat_input("سوال خود را اینجا بنویسید..."):
             user_message = {"role": "user", "type": "text", "content": user_input}
@@ -201,13 +189,15 @@ class App:
 
             if response_type == "image":
                 response = {"role": "assistant", "type": "image", "image": features.get("image"), "caption": features.get("caption")}
+                add_message(st.session_state.active_session, response)
             else:
+                # جمع کردن پاسخ متنی
+                response_text = "".join(list(self.response_generator(user_input, features)))
                 with st.chat_message("assistant"):
-                    response_text = st.write_stream(self.response_generator(user_input, features))
-                response = {"role": "assistant", "type": "text", "content": response_text.strip()}
+                    st.markdown(response_text)
+                response = {"role": "assistant", "type": "text", "content": response_text}
+                add_message(st.session_state.active_session, response)
 
-
-            add_message(st.session_state.active_session, response)
             st.rerun()
 
     def run(self):
@@ -221,40 +211,32 @@ class App:
             config['cookie']['expiry_days']
         )
 
-        # اول وضعیت ورود بررسی میشه
-        if "authentication_status" not in st.session_state:
-            st.session_state["authentication_status"] = None
+        name = st.session_state.get("name")
+        username = st.session_state.get("username")
+        status = st.session_state.get("authentication_status")
 
-        if st.session_state["authentication_status"]:  
-            # ✅ کاربر وارد شده → دیگه دکمه ورود/ثبت نام رو نشون نده
-            name = st.session_state["name"]
-            username = st.session_state["username"]
+        if status:
             self.run_chatbot_interface(username, name, authenticator)
-
         else:
-            # ❌ کاربر وارد نشده → دکمه‌های ورود و ثبت‌نام نشون بده
             choice = st.radio("انتخاب کنید:", ("ورود", "ثبت نام"), horizontal=True, label_visibility="collapsed")
-
             if choice == "ورود":
-                authenticator.login()
-                if st.session_state["authentication_status"]:
+                authenticator.login(location='main')
+                if st.session_state.get("authentication_status"):
                     st.rerun()
-                elif st.session_state["authentication_status"] is False:
+                elif st.session_state.get("authentication_status") is False:
                     st.error("نام کاربری یا رمز عبور اشتباه است")
-                elif st.session_state["authentication_status"] is None:
+                elif st.session_state.get("authentication_status") is None:
                     st.warning("لطفا نام کاربری و رمز عبور خود را وارد کنید")
-
             elif choice == "ثبت نام":
                 registered_user = authenticator.register_user(location="main", pre_authorized=None)
                 if registered_user:
                     st.success("کاربر با موفقیت ثبت نام شد. اکنون از بخش ورود وارد شوید.")
                     with open('config.yaml', 'w', encoding='utf-8') as file:
-                            yaml.dump(config, file, default_flow_style=False, allow_unicode=True)
+                        yaml.dump(config, file, default_flow_style=False, allow_unicode=True)
                     time.sleep(1)
                     st.rerun()
 
 
-# --- اجرای برنامه ---
 if __name__ == "__main__":
     app = App()
     app.run()
