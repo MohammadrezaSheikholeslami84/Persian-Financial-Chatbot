@@ -153,9 +153,3 @@ Contributions are welcome! Please open issues or submit PRs for bug fixes, impro
 
 ---
 
-```
-
----
-
-می‌خوای همین فایل `README.md` رو مستقیم آماده کنم که دانلودش کنی، یا ترجیح میدی خودت کپی‌پیست کنی توی ریپو؟
-```
