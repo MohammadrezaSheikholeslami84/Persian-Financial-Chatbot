@@ -202,69 +202,106 @@ class App:
                 add_message(st.session_state.active_session, response)
             st.rerun()
 
+
     def run(self):
         with open('config.yaml', encoding='utf-8') as file:
             config = yaml.load(file, Loader=SafeLoader)
 
         authenticator = stauth.Authenticate(
-            config['credentials'],
-            config['cookie']['name'],
-            config['cookie']['key'],
-            config['cookie']['expiry_days']
-        )
+        config['credentials'],
+        config['cookie']['name'],
+        config['cookie']['key'],
+        config['cookie']['expiry_days']
+    )
 
-        # اول وضعیت ورود بررسی میشه
-        if "authentication_status" not in st.session_state:
-            st.session_state["authentication_status"] = None
+        # -------------------------
+        # 📌 تب‌های اپلیکیشن
+        # -------------------------
+        menu = st.sidebar.radio("منو", ["چت‌بات", "درباره ما"])
 
-        if st.session_state["authentication_status"]:
-            # ✅ کاربر وارد شده → رابط چت‌بات
-            name = st.session_state["name"]
-            username = st.session_state["username"]
-            st.success(f"سلام {name}! به چت‌بات مالی خوش آمدید 💬")
-            self.run_chatbot_interface(username, name, authenticator)
+        if menu == "چت‌بات":
+            # اول وضعیت ورود بررسی میشه
+            if "authentication_status" not in st.session_state:
+                st.session_state["authentication_status"] = None
 
-        else:
-            # ❌ کاربر وارد نشده → دکمه‌های ورود و ثبت‌نام
-            choice = st.radio("انتخاب کنید:", ("ورود", "ثبت نام"), horizontal=True, label_visibility="collapsed")
+            if st.session_state["authentication_status"]:
+                # ✅ کاربر وارد شده → رابط چت‌بات
+                name = st.session_state["name"]
+                username = st.session_state["username"]
+                st.success(f"سلام {name}! به چت‌بات مالی خوش آمدید 💬")
+                self.run_chatbot_interface(username, name, authenticator)
 
+            else:
+                # ❌ کاربر وارد نشده → دکمه‌های ورود و ثبت‌نام
+                choice = st.radio("انتخاب کنید:", ("ورود", "ثبت نام"), horizontal=True, label_visibility="collapsed")
 
-            if choice == "ورود":
-                # فقط location مشخص می‌کنیم
-                try:
-                    authenticator.login(captcha = True,fields = {'Form name':'ورود', 'Username':'نام کاربری', 'Password':'رمز عبور', 'Login':'ورود', 'Captcha':'کپچا'})
-                except Exception as e:
-                    st.error(e)
+                if choice == "ورود":
+                    try:
+                        authenticator.login(
+                            captcha=True,
+                            fields={'Form name':'ورود', 'Username':'نام کاربری', 'Password':'رمز عبور', 'Login':'ورود', 'Captcha':'کپچا'}
+                        )
+                    except Exception as e:
+                        st.error(e)
 
-                if st.session_state.get("authentication_status"):
-                    authenticator.logout()
-                    st.success(f"سلام {st.session_state['name']}! به چت‌بات مالی خوش آمدید 💬")
-                    st.rerun()
-                elif st.session_state.get("authentication_status") is False:
-                    st.error("نام کاربری یا رمز عبور اشتباه است")
-
-            
-            
-            elif choice == "ثبت نام":
-                try :
-                    email_of_registered_user,username_of_registered_user,name_of_registered_user = authenticator.register_user(location='main',password_hint = False,clear_on_submit= True,
-                                                                                               fields= {'First name' : 'نام','Last name' : 'نام خانوادگی','Form name':'ثبت نام', 'Email':'ایمیل', 'Username':'نام کاربری', 'Password':'رمز عبور', 'Repeat password':'تکرار رمز عبور', 'Captcha':'کپچا', 'Register':'ثبت نام'})
-                    if email_of_registered_user:
-                        st.success("کاربر با موفقیت ثبت نام شد. اکنون به‌صورت خودکار وارد می‌شوید...")
-                        # بروزرسانی config
-                        with open('config.yaml', 'w', encoding='utf-8') as file:
-                            yaml.dump(config, file, default_flow_style=False, allow_unicode=True)
-                        # خودکار ورود پس از ثبت‌نام
-                        st.session_state['authentication_status'] = True
-                        st.session_state['username'] = username_of_registered_user
-                        st.session_state['name'] = name_of_registered_user
+                    if st.session_state.get("authentication_status"):
+                        authenticator.logout()
+                        st.success(f"سلام {st.session_state['name']}! به چت‌بات مالی خوش آمدید 💬")
                         st.rerun()
-                    else:
-                        st.warning("لطفا همه فیلدهای ثبت نام را پر کنید")
+                    elif st.session_state.get("authentication_status") is False:
+                        st.error("نام کاربری یا رمز عبور اشتباه است")
 
-                except Exception as e:
-                    st.error(e)
-                
+                elif choice == "ثبت نام":
+                    try:
+                        email_of_registered_user,username_of_registered_user,name_of_registered_user = authenticator.register_user(
+                            location='main',
+                            password_hint=False,
+                            clear_on_submit=True,
+                            fields={'First name':'نام','Last name':'نام خانوادگی','Form name':'ثبت نام',
+                                    'Email':'ایمیل','Username':'نام کاربری','Password':'رمز عبور',
+                                    'Repeat password':'تکرار رمز عبور','Captcha':'کپچا','Register':'ثبت نام'}
+                        )
+                        if email_of_registered_user:
+                            st.success("کاربر با موفقیت ثبت نام شد. اکنون به‌صورت خودکار وارد می‌شوید...")
+                            with open('config.yaml', 'w', encoding='utf-8') as file:
+                                yaml.dump(config, file, default_flow_style=False, allow_unicode=True)
+                            st.session_state['authentication_status'] = True
+                            st.session_state['username'] = username_of_registered_user
+                            st.session_state['name'] = name_of_registered_user
+                            st.rerun()
+                        else:
+                            st.warning("لطفا همه فیلدهای ثبت نام را پر کنید")
+
+                    except Exception as e:
+                        st.error(e)
+
+        elif menu == "درباره ما":
+            st.title("ℹ️ درباره چت‌بات هوشمند مالی")
+            st.markdown("""
+چت‌بات مالی فارسی، دستیار هوشمند مالی‌ای است که هدفش **تسهیل دسترسی به اطلاعات بازارهای مالی** در زمان واقعی و بررسی داده‌های تاریخی است.  
+این پروژه تلاشی است برای ارائه خدمات کامل به کاربران فارسی‌زبان تا بتوانند بدون پیچیدگی، از قیمت‌ها، نمودارها و مقایسه‌های دقیق بهره ببرند.  
+
+### 🛠️ قابلیت‌ها
+- نمایش قیمت‌های زنده دارایی‌ها از جمله ارزها، سکه و طلا، رمزارزها، سهام ایران و سهام خارجی  
+- امکان استعلام قیمت‌های گذشته و بررسی روند تاریخی تغییرات بازار  
+- محاسبه میزان بازدهی دارایی‌ها در بازه‌های زمانی مختلف و مقایسه آن‌ها  
+- تولید نمودارهای حرفه‌ای با برچسب‌های فارسی برای درک تصویری بهتر داده‌ها  
+- پشتیبانی از رابط‌های مختلف:  
+  -- رابط وب تعاملی  
+  -- بات تلگرام برای دسترسی راحت‌تر و سریع‌تر از طریق پیام‌رسان  
+- ذخیره‌سازی تاریخچه گفتگو برای هر کاربر  
+
+### 🌍 بازارها و دارایی‌های تحت پوشش
+- **ارزها**: دلار، یورو، پوند، درهم، دینار، فرانک، روبل  
+- **طلا و سکه‌ها**: انس جهانی، سکه امامی، بهار آزادی و انواع سکه‌های دیگر  
+- **رمزارزها**: بیت‌کوین، اتریوم, کاردانو, ریپل, تتر و دیگر رمزارزهای شناخته‌شده  
+- **سهام ایران**: نمادهای بورسی مختلف همراه با شاخص‌ها مثل شاخص کل، شاخص هم‌وزن و فرابورس  
+- **سهام خارجی**: اپل، گوگل، آمازون، تسلا و مایکروسافت  
+
+🔒 سیستم دارای **ثبت‌نام و ورود امن** بوده و امکان مدیریت چند کاربر را فراهم می‌کند.  
+""")
+
+
 
 if __name__ == "__main__":
     app = App()
