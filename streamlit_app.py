@@ -242,14 +242,9 @@ class App:
                     st.rerun()
                 elif st.session_state.get("authentication_status") is False:
                     st.error("نام کاربری یا رمز عبور اشتباه است")
-                
-                try:
-                    authenticator.experimental_guest_login('Login with Google',
-                                           provider='google',
-                                           oauth2=config['oauth2'])
-                except Exception as e:
-                    st.error(e)
 
+            
+            
             elif choice == "ثبت نام":
                 try :
                     email_of_registered_user,username_of_registered_user,name_of_registered_user = authenticator.register_user(location='main',password_hint = False,clear_on_submit= True,

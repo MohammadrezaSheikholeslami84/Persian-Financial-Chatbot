@@ -22,8 +22,4 @@ credentials:
       logged_in: false
       password: $2b$12$22cysMAat9LzNyt69r/I/u4FB.9bP9nRHv0CRuil8Qrl10V7DJ2cG
       roles: null
-oauth2:
-  google:
-    client_id: "363225751724-usqfutt6ualuvjda6ob4u8sa5bjvs84t.apps.googleusercontent.com"
-    client_secret: "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"
-    redirect_uri: "https://financial-llm.streamlit.app/"
+
