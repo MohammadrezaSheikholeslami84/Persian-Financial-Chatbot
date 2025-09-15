@@ -7,35 +7,34 @@ import database_store
 import financial_core
 
 
-def get_iran_symbol_data(input_symbol):
+def get_iran_symbol2_data(input_symbol):
     """Fetch current Iranian symbol data from BrsApi."""
-
     api_key = "FreeBvt6cnOYtMgfj8GQP5GSuIy8LUh5"
-    url = "https://BrsApi.ir/Api/Tsetmc/AllSymbols.php?key=" + api_key
+    url = f"https://BrsApi.ir/Api/Tsetmc/AllSymbols.php?key={api_key}"
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 OPR/106.0.0.0",
-        "Accept": "application/json, text/plain, */*",
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
     }
 
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status()
         data = response.json()
 
         for symbols in data:
-            symbol_name = symbols["l18"]
-            company_name = symbols["l30"]
-            time = symbols["time"]
-            price = "{:,}".format(float(symbols["pc"]) / 10)
-            price_change_percentage = symbols["pcp"]
+            symbol_name = symbols.get("l18", "")
+            company_name = symbols.get("l30", "")
+            time = symbols.get("time", "")
+            price = "{:,}".format(float(symbols.get("pc", 0)) / 10)
+            price_change_percentage = float(symbols.get("pcp", 0))
 
-            if symbol_name == input_symbol:
+            if symbol_name.strip().lower() == input_symbol.strip().lower():
+                direction = "بدون تغییر"
                 if price_change_percentage > 0:
                     direction = "افزایش"
                 elif price_change_percentage < 0:
                     direction = "کاهش"
-                else:
-                    direction = "بدون تغییر"
 
                 if price_change_percentage == 0:
                     message = (
@@ -48,14 +47,15 @@ def get_iran_symbol_data(input_symbol):
                         f"{abs(price_change_percentage)} درصد تغییر داشته که نسبت به دیروز {direction} یافته است. "
                         f"(⏰ زمان: {time})"
                     )
-
                 return message, price
-    else:
 
-        return f"Error: {response.status_code}"
+        return {"message": "Symbol not found"}
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
-def get_iran_symbol_data2(input_symbol, timeout=5):
+def get_iran_symbol_data(input_symbol, timeout=5):
     
     """Fetch current Iranian symbol data from shakhesban."""
 

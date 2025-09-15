@@ -27,7 +27,7 @@ def parse_number(text: str) -> float:
             return text  # اگر نشد همون متن برگرده
 
 
-def get_iran_index_data(input_index):
+def get_iran_index_data2(input_index):
     """Fetch current Iranian index data from databourse.ir"""
 
     # نقشه نام‌های ورودی به نام‌های سایت
@@ -37,6 +37,8 @@ def get_iran_index_data(input_index):
         "شاخص فرابورس": "شاخص کل فرابورس",
         "شاخص هم وزن": "شاخص قیمت (هم وزن)",
     }
+
+    
     index_name = indexs.get(input_index)
     index_link = "https://databourse.ir/indices"
 
@@ -96,7 +98,7 @@ def get_iran_index_data(input_index):
 
     return "❌ شاخص موردنظر پیدا نشد.", None
 
-def get_iran_index_data2(index_name_input: str) -> str:
+def get_iran_index_data(index_name_input: str) -> str:
     url = "https://www.shakhesban.com/markets/index"
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")

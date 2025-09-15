@@ -162,9 +162,8 @@ def extract_features(user_input):
                     extracted_features["symbols"].append(words)
 
             # Iranian Index
-            for words in index_symbols_keywords:
+            for words in sorted(index_symbols_keywords, key=len, reverse=True):
                 pattern = rf"\b{re.escape(words)}\b"
-
                 if re.search(pattern, user_input) and words not in extracted_features["symbols"]:
                     print(words)
                     extracted_features["sub_type"] = "Iran Index"
@@ -173,7 +172,7 @@ def extract_features(user_input):
             # Iranian Symbols (فولاد، بکام ...)
             for symbol in iran_symbols_keywords:
                 pattern = rf"\b{re.escape(symbol)}\b"
-                if re.search(pattern, user_input) and symbol not in extracted_features["symbols"] and "سهام" in user_input:
+                if re.search(pattern, user_input) and symbol not in extracted_features["symbols"] and  ("سهام" in user_input or "سهم" in user_input or "نماد" in user_input):
                     extracted_features["sub_type"] = "Iran Symbol"
                     extracted_features["symbols"].append(symbol)
 
@@ -272,16 +271,16 @@ def get_data_for_date(main_dataframe, date_str, currency_type, asset_name,unit =
 
 
 def process_request(user_input):
-    os.environ["GOOGLE_API_KEY"] = "AIzaSyCykh_9usou6lXPxrItJ4ajCB4BvWr6Nq0"
-
-    api_key = os.environ.get("GOOGLE_API_KEY")
-    print(api_key)  # باید کلیدت رو چاپ کنه
 
     features = extract_features(user_input)
     print(features)  # برای دیباگ
 
     full_history_df = None
 
+    if features.get("type","") == "" or features.get("time","") == "":
+        return {"type": "text", "text": ""}
+        #return gmini.rag_response(user_input,"")
+    #api_key = "AIzaSyCykh_9usou6lXPxrItJ4ajCB4BvWr6Nq0"
     #print(gmini.call_gemini(user_input, api_key))
     
    # if api_key is not None:
@@ -376,7 +375,8 @@ def process_request(user_input):
                 
                 # ==================== Prediction ====================    
                 elif features["forecast"]:
-                    results = prediction.predict(full_history_df)
+                    df = database_store.get_data_from_db(table_name)
+                    results = prediction.predict(df,user_input,number_years=4)
                     if not results:
                         return {"type": "text", "text": "❌ داده‌ای برای پیش بینی پیدا نشد."}
 
@@ -416,7 +416,8 @@ def process_request(user_input):
                     
                     # ==================== Prediction ====================    
                     elif features["forecast"]:
-                        results = prediction.predict(full_history_df)
+                        df = database_store.get_data_from_db(table_name)
+                        results = prediction.predict(df,user_input,number_years=4)
                         if not results:
                             return {"type": "text", "text": "❌ داده‌ای برای پیش بینی پیدا نشد."}
 
@@ -460,7 +461,8 @@ def process_request(user_input):
                     
                     # ==================== Prediction ====================    
                     elif features["forecast"]:
-                        results = prediction.predict(full_history_df)
+                        df = database_store.get_data_from_db(table_name)
+                        results = prediction.predict(df,user_input,number_years=4)
                         if not results:
                             return {"type": "text", "text": "❌ داده‌ای برای پیش بینی پیدا نشد."}
 
@@ -501,7 +503,8 @@ def process_request(user_input):
                     
                     # ==================== Prediction ====================    
                     elif features["forecast"]:
-                        results = prediction.predict(full_history_df)
+                        df = database_store.get_data_from_db(table_name)
+                        results = prediction.predict(df,user_input,number_years=4)
                         if not results:
                             return {"type": "text", "text": "❌ داده‌ای برای پیش بینی پیدا نشد."}
 
@@ -543,7 +546,8 @@ def process_request(user_input):
                 
                 # ==================== Prediction ====================    
                 elif features["forecast"]:
-                    results = prediction.predict(full_history_df)
+                    df = database_store.get_data_from_db(table_name)
+                    results = prediction.predict(df,user_input,number_years=4)
                     if not results:
                         return {"type": "text", "text": "❌ داده‌ای برای پیش بینی پیدا نشد."}
 
