@@ -278,8 +278,8 @@ def process_request(user_input):
     full_history_df = None
 
     if features.get("type","") == "" or features.get("time","") == "":
-        #return {"type": "text", "text": ""}
-        return gmini.rag_response(user_input,"")
+        return {"type": "text", "text": ""}
+        #return gmini.rag_response(user_input,"")
     #api_key = "AIzaSyCykh_9usou6lXPxrItJ4ajCB4BvWr6Nq0"
     #print(gmini.call_gemini(user_input, api_key))
     
