@@ -8,6 +8,22 @@ credentials:
       email: sampad1384@gmail.com
       name: mohammadreza sheikholeslami
       password: $2b$12$Eyd2.KxRlEH71f/p52c7zuoEDsjcS8rFo28QANerpMSDHZtTO9biq
-preauthorized:
-  emails:
-  - sampad1384@gmail.com
+    mrsh84211:
+      email: sampad1344@gmail.com
+      first_name: محمدرضا
+      last_name: شیخ الاسلامی
+      logged_in: false
+      password: $2b$12$BHhzG68OnfdV6m4waOTireU2.G9ycnSzW2qWwc8oOooUTic5ip5sK
+      roles: null
+    mrsh99:
+      email: sampad1359@gmail.com
+      first_name: maryam
+      last_name: tarazi
+      logged_in: false
+      password: $2b$12$22cysMAat9LzNyt69r/I/u4FB.9bP9nRHv0CRuil8Qrl10V7DJ2cG
+      roles: null
+oauth2:
+  google:
+    client_id: "363225751724-usqfutt6ualuvjda6ob4u8sa5bjvs84t.apps.googleusercontent.com"
+    client_secret: "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"
+    redirect_uri: "https://financial-llm.streamlit.app/"

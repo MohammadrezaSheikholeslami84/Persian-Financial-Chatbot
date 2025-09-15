@@ -194,14 +194,16 @@ class App:
                 # جمع کردن پاسخ متنی
                 response_text = "".join(list(self.response_generator(user_input, features)))
                 with st.chat_message("assistant"):
-                    st.markdown(response_text)
-                response = {"role": "assistant", "type": "text", "content": response_text}
-                add_message(st.session_state.active_session, response)
+                    # st.write_stream پاسخ را به صورت زنده نمایش داده و در نهایت کل متن را برمی‌گرداند
+                    full_response = st.write_stream(self.response_generator(user_input, features))
 
+                # ذخیره کل پاسخ در دیتابیس پس از نمایش کامل
+                response = {"role": "assistant", "type": "text", "content": full_response}
+                add_message(st.session_state.active_session, response)
             st.rerun()
 
     def run(self):
-        with open('config.yaml') as file:
+        with open('config.yaml', encoding='utf-8') as file:
             config = yaml.load(file, Loader=SafeLoader)
 
         authenticator = stauth.Authenticate(
@@ -211,31 +213,63 @@ class App:
             config['cookie']['expiry_days']
         )
 
-        name = st.session_state.get("name")
-        username = st.session_state.get("username")
-        status = st.session_state.get("authentication_status")
+        # اول وضعیت ورود بررسی میشه
+        if "authentication_status" not in st.session_state:
+            st.session_state["authentication_status"] = None
 
-        if status:
+        if st.session_state["authentication_status"]:
+            # ✅ کاربر وارد شده → رابط چت‌بات
+            name = st.session_state["name"]
+            username = st.session_state["username"]
+            st.success(f"سلام {name}! به چت‌بات مالی خوش آمدید 💬")
             self.run_chatbot_interface(username, name, authenticator)
+
         else:
+            # ❌ کاربر وارد نشده → دکمه‌های ورود و ثبت‌نام
             choice = st.radio("انتخاب کنید:", ("ورود", "ثبت نام"), horizontal=True, label_visibility="collapsed")
+
+
             if choice == "ورود":
-                authenticator.login(location='main')
+                # فقط location مشخص می‌کنیم
+                try:
+                    authenticator.login(captcha = True,fields = {'Form name':'ورود', 'Username':'نام کاربری', 'Password':'رمز عبور', 'Login':'ورود', 'Captcha':'کپچا'})
+                except Exception as e:
+                    st.error(e)
+
                 if st.session_state.get("authentication_status"):
+                    authenticator.logout()
+                    st.success(f"سلام {st.session_state['name']}! به چت‌بات مالی خوش آمدید 💬")
                     st.rerun()
                 elif st.session_state.get("authentication_status") is False:
                     st.error("نام کاربری یا رمز عبور اشتباه است")
-                elif st.session_state.get("authentication_status") is None:
-                    st.warning("لطفا نام کاربری و رمز عبور خود را وارد کنید")
-            elif choice == "ثبت نام":
-                registered_user = authenticator.register_user(location="main", pre_authorized=None)
-                if registered_user:
-                    st.success("کاربر با موفقیت ثبت نام شد. اکنون از بخش ورود وارد شوید.")
-                    with open('config.yaml', 'w', encoding='utf-8') as file:
-                        yaml.dump(config, file, default_flow_style=False, allow_unicode=True)
-                    time.sleep(1)
-                    st.rerun()
+                
+                try:
+                    authenticator.experimental_guest_login('Login with Google',
+                                           provider='google',
+                                           oauth2=config['oauth2'])
+                except Exception as e:
+                    st.error(e)
 
+            elif choice == "ثبت نام":
+                try :
+                    email_of_registered_user,username_of_registered_user,name_of_registered_user = authenticator.register_user(location='main',password_hint = False,clear_on_submit= True,
+                                                                                               fields= {'First name' : 'نام','Last name' : 'نام خانوادگی','Form name':'ثبت نام', 'Email':'ایمیل', 'Username':'نام کاربری', 'Password':'رمز عبور', 'Repeat password':'تکرار رمز عبور', 'Captcha':'کپچا', 'Register':'ثبت نام'})
+                    if email_of_registered_user:
+                        st.success("کاربر با موفقیت ثبت نام شد. اکنون به‌صورت خودکار وارد می‌شوید...")
+                        # بروزرسانی config
+                        with open('config.yaml', 'w', encoding='utf-8') as file:
+                            yaml.dump(config, file, default_flow_style=False, allow_unicode=True)
+                        # خودکار ورود پس از ثبت‌نام
+                        st.session_state['authentication_status'] = True
+                        st.session_state['username'] = username_of_registered_user
+                        st.session_state['name'] = name_of_registered_user
+                        st.rerun()
+                    else:
+                        st.warning("لطفا همه فیلدهای ثبت نام را پر کنید")
+
+                except Exception as e:
+                    st.error(e)
+                
 
 if __name__ == "__main__":
     app = App()
