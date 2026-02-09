@@ -8,7 +8,6 @@ asttokens==2.4.1
 astunparse==1.6.3
 attrs==25.3.0
 aiortc==1.14.0
-av==16.1.0
 beautifulsoup4==4.13.5
 blinker==1.9.0
 bs4==0.0.2
@@ -183,4 +182,5 @@ zope.interface==7.2
 #ffmpeg-python==0.5.0
 streamlit-authenticator==0.4.2
 bcrypt==4.0.1
+
 
