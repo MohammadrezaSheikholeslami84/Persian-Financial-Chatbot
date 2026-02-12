@@ -11,13 +11,6 @@ from transformers import WhisperProcessor, WhisperForConditionalGeneration
 import torch
 import torchaudio
 import gmini
-'''
-print("Loading HuggingFace Whisper model (large-fa)...")
-device = "cuda" if torch.cuda.is_available() else "cpu"
-hf_whisper_processor = WhisperProcessor.from_pretrained("vhdm/whisper-large-fa-v1")
-hf_whisper_model = WhisperForConditionalGeneration.from_pretrained("vhdm/whisper-large-fa-v1").to(device)
-print(f"Model loaded on {device}.")
-'''
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="/static")
