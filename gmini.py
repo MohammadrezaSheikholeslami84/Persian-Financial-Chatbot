@@ -5,71 +5,144 @@ from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 import re
 import financial_core
-
 import cohere
 import os
-co = cohere.ClientV2("fPl1LjBKiVzVUhmQpbCecyZHPuCBmiejt1BEbYW5")  # better: use environment variable for security
+from openai import OpenAI
+from dotenv import load_dotenv
 
-def rag_response(user_query, retriever_output):
-    """
-    user_query: متن سوال کاربر
-    retriever_output: خروجی سیستم فعلی (مثلا قیمت یا مقایسه)
-    """
+load_dotenv()
 
+api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(base_url='https://api.gapgpt.app/v1',api_key=api_key)
+
+
+def rag_response(user_query, retriever_output, history_text=""):
     prompt = f"""
-        شما یک دستیار هوشمند مالی بسیار حرفه‌ای و خوش‌برخورد هستی.
+شما یک دستیار مالی حرفه‌ای و خوش‌برخورد هستید.
+
+تاریخچه مکالمه قبلی:
+{history_text}
+
 کاربر پرسیده: "{user_query}"
 
-داده‌های واکشی‌شده:
-{retriever_output}
+داده‌های واکشی‌شده: {retriever_output}
 
-پاسخ بده:
-- کوتاه، روان و محاوره‌ای باش، سلام یا مقدمه اضافه لازم نیست.
-- اگر داده‌ای هست، تاریخ و قیمت‌ها را تغییر نده و نگو اطلاعات کامل نیست.
-- اگر داده‌ای نیست، با دانش خودت جواب بده طوری که مکالمه طبیعی شود.
+دستورالعمل‌ها:
+1. ابتدا پیام کاربر را با توجه به تاریخچه مکالمه بررسی کن.
+   - اگر کاربر دوباره به موضوعی که قبلاً در تاریخچه مطرح شده اشاره کرد، پاسخ را بر اساس اطلاعات قبلی و داده‌های جدید ترکیب کن.
+2. اگر پیام کاربر غلط املایی یا دستوری دارد، خودت آن را اصلاح کن و نسخه صحیح را به کاربر نشان بده.
+   مثال: اگر کاربر نوشت "قیمت سهم وملی چن بود؟"، مدل باید اصلاح کند و نمایش دهد: "قیمت سهم وملی چند بود؟"
+3. اگر پیام ناقص یا مبهم است و اطلاعات کافی برای پاسخ دادن ندارد، یک سؤال کوتاه برای روشن شدن موضوع از کاربر بپرس.
+   مثال: "می‌توانید کمی توضیح بیشتری بدهید تا بهتر راهنمایی کنم؟"
+4. اگر پیام واضح و کامل است، با استفاده از داده‌های واکشی‌شده و اطلاعات موجود در تاریخچه، پاسخ کوتاه، روان و محاوره‌ای بده.
+5. هیچ مقدمه یا سلام اضافه نکن.
+6. اگر داده‌ای موجود است، تاریخ و قیمت‌ها را تغییر نده.
+7. متن پاسخ را تمیز و بدون تکرار ارائه کن.
+8. اگر داده‌ای نیست، با دانش خودت پاسخ بده به شکلی طبیعی و دوستانه.
+
+توجه: فقط در صورت نیاز (پیام ناقص یا مبهم) از کاربر سؤال بپرس، اما همیشه غلط‌های املایی و دستوری را خودت اصلاح و به کاربر نمایش بده.
 """
-
-    response = co.chat(
-        model="command-a-03-2025",  # Cohere chat model
+    
+    response = client.chat.completions.create(
+        model="gpt-4o-mini", 
         messages=[{"role": "user", "content": prompt}],
-        max_tokens = 150,
-        temperature = 0.6
+        max_tokens=150,
+        temperature=0.7
     )
 
-    # خروجی متن تولید شده توسط مدل
-    return response.message.content[0].text
+    return response.choices[0].message.content
 
+def chat_financial_assistant(user_input, history_text, model_correct="gpt-4o-mini", model_response="gpt-4o-mini"):
+    """
+    دستیار مالی یکپارچه:
+    1. اصلاح متن کاربر (املایی + دستوری + فاصله/نیم‌فاصله)
+    2. پردازش متن اصلاح‌شده (استخراج intent + واکشی داده‌ها)
+    3. تولید پاسخ نهایی کوتاه و محاوره‌ای
+    """
 
-def call_gemini(prompt: str, api_key: str) -> str:
+    # -----------------------------
+    # مرحله 1: اصلاح متن کاربر
+    # -----------------------------
+    prompt_correct = f"""
+        شما یک دستیار مالی هوشمند هستید. 
 
-    """یک تابع عمومی برای ارسال درخواست به Gemini API."""
+        ورودی شما: 
+        - تاریخچه مکالمه: {history_text}
+        - متن جدید کاربر: "{user_input}"
 
-    model_name = "gemini-1.5-flash"
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-    headers = {"Content-Type": "application/json"}
-    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        وظیفه شما:
+        1. غلط‌های املایی و دستوری متن کاربر را اصلاح کن.
+        2. با توجه به تاریخچه، اگر متن کاربر مبهم است یا به موضوع قبلی اشاره دارد، آن را کامل و شفاف بازنویسی کن.
+        4. معنی پیام کاربر را تغییر نده؛ فقط واضح و درستش کن.
 
+        خروجی:
+        فقط یک جمله‌ی اصلاح‌شده و شفاف از متن کاربر بده.
+        """
+    
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=60)
-        response.raise_for_status()
-        data = response.json()
-        return data["candidates"][0]["content"]["parts"][0]["text"]
-    except requests.exceptions.RequestException as e:
-        raise ConnectionError(
-            f"خطای شبکه: {e}. از اتصال اینترنت و فعال بودن VPN اطمینان حاصل کنید."
+        response = client.chat.completions.create(
+            model=model_correct,
+            messages=[{"role": "user", "content": prompt_correct}],
+            temperature=0.1
         )
-    except (KeyError, IndexError) as e:
-        raise ValueError(f"پاسخ نامعتبر از API دریافت شد: {response.text}")
+        corrected_text = response.choices[0].message.content.strip()
+    except Exception as e:
+        corrected_text = user_input  # fallback
+        print("Error in correction:", e)
+
+    #print("Corrected text:", corrected_text)
+
+    # -----------------------------
+    # مرحله 2: پردازش متن اصلاح‌شده
+    # -----------------------------
+    try:
+        features = financial_core.extract_features(corrected_text)
+        data = financial_core.process_request(corrected_text).get("text", "")
+    except Exception as e:
+        features, data = {}, ""
+        print("Error in feature extraction or data fetch:", e)
+
+    # -----------------------------
+    # مرحله 3: تولید پاسخ نهایی
+    # -----------------------------
+    prompt_final = f"""
+    شما یک دستیار مالی حرفه‌ای و خوش‌برخورد هستید.
+
+    تاریخچه مکالمه: {history_text}
+    پیام اصلاح‌شده کاربر: "{corrected_text}"
+    داده‌های واکشی‌شده: {data}
+
+    دستورالعمل‌ها:
+    1. پاسخ کوتاه، روان و محاوره‌ای بده.
+    2. هیچ مقدمه یا سلام اضافه نکن.
+    3. داده‌ها را تغییر نده.
+    4. اگر پیام کاربر ناقص یا مبهم است، مودبانه یک سؤال کوتاه بپرس.
+    5. اگر داده‌ای نیست، با دانش خودت پاسخ بده به شکلی طبیعی و دوستانه.
+    """
+    try:
+        response_final = client.chat.completions.create(
+            model=model_response,
+            messages=[{"role": "user", "content": prompt_final}],
+            temperature=0.6
+        )
+        final_reply = response_final.choices[0].message.content.strip()
+    except Exception as e:
+        final_reply = "متاسفم، مشکلی در پردازش پیش آمد."
+        print("Error in final response:", e)
 
 
-def correct_text_with_gemini(user_prompt: str, api_key: str) -> str:
+    return final_reply
+
+
+def correct_text_with_gpt_api(user_prompt: str, model: str = "gpt-4o") -> str:
     """
-    از Gemini برای اصلاح غلط‌های املایی و دستوری در متن ورودی استفاده می‌کند.
+    اصلاح غلط‌های املایی و دستوری متن فارسی با استفاده از OpenAI Chat API.
     """
+
     correction_prompt = f"""
-    You are an expert assistant specializing in correcting Persian financial queries. Your task is to correct spelling, grammar, and typos in the user's input, making it clean and understandable. The output must be ONLY the corrected sentence.
-
-    **Context:** The user is asking questions about the stock market, currencies, and gold in Iran. Pay close attention to financial terms and stock symbols.
+    شما یک دستیار متخصص هستید که متن‌های مالی فارسی را تصحیح می‌کند.
+    وظیفه شما اصلاح اشتباهات املایی، دستوری و تایپی است و متن را قابل فهم کنید.
+    تنها خروجی باید جمله تصحیح‌شده باشد، بدون هیچ توضیح اضافی.
 
     **Examples:**
     1. Original: "قیمت سهم وملی نسبت بسال پپش چه تغیر کرده ؟"
@@ -79,41 +152,45 @@ def correct_text_with_gemini(user_prompt: str, api_key: str) -> str:
     3. Original: "شاخص بورس امروز چن بود"
        Corrected: "شاخص بورس امروز چند بود؟"
 
-    **Task:**
-    Now, correct the following sentence.
-
-    Original sentence: "{user_prompt}"
-
-    Corrected sentence:
+    **Now correct this sentence:**
+    "{user_prompt}"
     """
+
     try:
-        corrected_text = call_gemini(correction_prompt, api_key)
-        return corrected_text.strip()
-    except Exception as e:
-        return user_prompt  
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": correction_prompt}],
+            temperature=0
+        )
+        corrected_text = response.choices[0].message.content.strip()
+        return corrected_text
+    except Exception:
+        return user_prompt
 
 
-def extract_features_with_gemini(user_prompt: str, api_key: str) -> dict:
+def extract_features_with_gpt_api(user_prompt: str, model: str = "gpt-4o") -> dict:
     """
-    با استفاده از Gemini، ویژگی‌های کلیدی را از درخواست کاربر استخراج می‌کند.
+    استخراج ویژگی‌های کلیدی از درخواست مالی فارسی با استفاده از OpenAI Chat API.
+    خروجی یک دیکشنری با keys: type, symbol, intent است.
     """
-    # پرامپت بهبود یافته با استفاده از لیست کلمات کلیدی کاربر
+
     extraction_prompt = f"""
-    You are a precise financial request analyzer. Your task is to analyze the following Persian text and return ONLY a single, clean JSON object with the specified structure. Do not add any explanations, notes, or text before or after the JSON object.
+    شما یک تحلیل‌گر دقیق درخواست‌های مالی هستید. متن فارسی زیر را تحلیل کنید و تنها یک آبجکت JSON بازگردانید با ساختار زیر:
 
-    The JSON object must have the following keys:
-    - "type": Asset type. It MUST be one of these values: ["currency", "gold", "iran_stock", "iran_index", "crypto", "america_stock", "unknown"].
-    - "symbol": The Persian symbol of the asset. Extract it from the text. It will likely be one of the keywords provided in the examples.
-    - "intent": The user's intent. It MUST be one of these values: ["get_price", "get_change", "get_chart"].
+    {{
+      "type": یکی از ["currency", "gold", "iran_stock", "iran_index", "crypto", "america_stock", "unknown"],
+      "symbol": نماد فارسی دارایی،
+      "intent": یکی از ["get_price", "get_change", "get_chart"]
+    }}
 
-    Here are lists of keywords to help you identify the correct type and symbol:
-    - Currency Symbols: ["دلار", "یورو", "پوند", "درهم", "دینار", "فرانک", "روبل"]
-    - Gold Symbols: ["طلا", "سکه امامی", "سکه بهار آزادی", "ربع سکه", "نیم سکه", "سکه"]
-    - Iran Stock Symbols: ["خودرو", "بکام", "شتران", ...]
-    - Iran Index Symbols: ["شاخص کل", "شاخص بورس", "شاخص هم وزن","شاخص فرابورس"]
-    - Crypto Symbols: ["بیت کوین", "اتریوم", "تتر"]
+    **Keywords:**
+    - Currency: ["دلار", "یورو", "پوند", "درهم", "دینار", "فرانک", "روبل"]
+    - Gold: ["طلا", "سکه امامی", "سکه بهار آزادی", "ربع سکه", "نیم سکه", "سکه"]
+    - Iran Stock: ["خودرو", "بکام", "شتران", ...]
+    - Iran Index: ["شاخص کل", "شاخص بورس", "شاخص هم وزن","شاخص فرابورس"]
+    - Crypto: ["بیت کوین", "اتریوم", "تتر"]
 
-    Examples:
+    **Examples:**
     - Input: "قیمت امروز دلار چنده؟"
       Output: {{"type": "currency", "symbol": "دلار", "intent": "get_price"}}
     - Input: "تغییرات سهام خودرو نسبت به سال گذشته چطور بوده؟"
@@ -123,84 +200,71 @@ def extract_features_with_gemini(user_prompt: str, api_key: str) -> dict:
     - Input: "شاخص بورس امروز چند بود؟"
       Output: {{"type": "iran_index", "symbol": "شاخص بورس","intent": "get_price"}}
 
-    Now, analyze the following text:
+    **Text to analyze:**
     "{user_prompt}"
     """
-    try:
-        result_str = call_gemini(extraction_prompt, api_key)
 
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": extraction_prompt}],
+            temperature=0
+        )
+
+        result_str = response.choices[0].message.content.strip()
         match = re.search(r"\{.*\}", result_str, re.DOTALL)
         if match:
             json_str = match.group(0)
             return json.loads(json_str)
         else:
-            raise ValueError("پاسخ دریافتی از Gemini شامل یک آبجکت JSON معتبر نبود.")
-
+            raise ValueError("پاسخ دریافتی از GPT شامل یک آبجکت JSON معتبر نبود.")
     except json.JSONDecodeError as json_err:
-        raise ValueError(
-            f"خطا در پارس کردن JSON از Gemini: {json_err}. پاسخ دریافتی: {result_str}"
-        )
+        raise ValueError(f"خطا در پارس کردن JSON از GPT: {json_err}. پاسخ دریافتی: {result_str}")
     except Exception as e:
-        raise ValueError(f"خطا در تحلیل درخواست با Gemini: {e}")
+        raise ValueError(f"خطا در تحلیل درخواست با GPT: {e}")
 
 
-# --- تابع جستجوی آنلاین با Gemini (ویرایش شده) ---
-def find_data_with_gemini(user_prompt: str, api_key: str) -> str:
-    """
-    اگر داده در سیستم داخلی پیدا نشد، از Gemini برای جستجو در وب استفاده می‌کند.
-    این تابع خود متن درخواست کاربر را دریافت می‌کند.
-    """
-    search_prompt = f"""
-    You are an expert financial assistant with access to real-time web search.
-    Find the answer to the following user's question from reliable web sources and provide a concise and accurate summary in Persian.
 
-    User's question: "{user_prompt}"
+
+def extract_features_with_gpt_fallback(user_prompt: str,regex_result, model="gpt-4o"):
     """
-    print(
-        f"[سیستم پشتیبان] در حال جستجو با Gemini برای سوال: '{user_prompt[:50]}...'..."
+    ابتدا از تابع regex خود استفاده می‌کند.
+    اگر خروجی ناقص یا خالی بود، GPT را صدا می‌زند و JSON دقیق باز می‌گرداند.
+    """
+
+    # بررسی کامل بودن خروجی regex
+    valid = regex_result and "symbols" in regex_result and regex_result["symbols"]
+
+    if valid:
+        return regex_result
+
+    # مرحله 2: اگر regex ناقص بود، از GPT کمک بگیر
+    prompt = f"""
+    شما یک تحلیل‌گر دقیق درخواست‌های مالی هستید. متن فارسی زیر را تحلیل کنید و تنها یک آبجکت JSON بازگردانید با ساختار:
+
+    {{
+      "symbols": [لیست نمادهای دارایی‌ها در متن],
+      "type": یکی از ["currency", "gold", "iran_stock", "iran_index", "crypto", "america_stock", "unknown"],
+      "date": تاریخ درخواست کاربر (اگر مشخص نیست "Unknown"),
+      "time": زمان درخواست (اگر مشخص نیست "Unknown"),
+      "Compare_Command": True/False،
+      "Change_Command": True/False،
+      "chart": True/False،
+      "forecast": True/False
+    }}
+
+    متن کاربر: "{user_prompt}"
+    """
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0
     )
-    return call_gemini(search_prompt, api_key)
 
-
-'''
-def process_financial_request(features: dict) -> dict:
-    """
-    بر اساس ویژگی‌های استخراج شده، داده‌های مالی را از منابع مربوطه دریافت می‌کند.
-    """
-    data_type = features.get("type")
-    symbol = features.get("symbol")
-    time_period = features.get("time_period")
-    intent = features.get("intent")
-
-    if not all([data_type, symbol, time_period, intent]):
-        raise ValueError("ویژگی‌های استخراج شده ناقص هستند.")
-
-    if data_type in ["currency", "gold", "iran_stock", "iran_index", "crypto"]:
-        # فراخوانی ماژول شبیه‌سازی شده
-        #data = financial_data_provider.get_data(symbol, data_type, time_period)
-        return {"data": data, "features": features}
+    result_str =  response.choices[0].message.content.strip()
+    match = re.search(r"\{.*\}", result_str, re.DOTALL)
+    if match:
+        return json.loads(match.group(0))
     else:
-        return {"data": "این نوع دارایی پشتیبانی نمی‌شود.", "features": features}
-'''
-
-
-def generate_final_response_with_gemini(original_prompt: str, processed_data: dict, api_key: str) -> str:
-    """
-    با استفاده از داده‌های دریافتی، یک پاسخ طبیعی و کامل تولید می‌کند.
-    """
-    
-    generation_prompt = f"""
-    شما یک دستیار هوشمند مالی بسیار حرفه‌ای و خوش‌برخورد هستی.
-    درخواست اصلی کاربر این بوده: "{original_prompt}"
-
-    اطلاعاتی که از سیستم مالی دریافت کرده‌ای این است:
-    {json.dumps(processed_data, ensure_ascii=False, indent=2)}
-
-    وظیفه شما:
-    با استفاده از این اطلاعات، یک پاسخ کامل، روان و دوستانه به زبان فارسی به کاربر بده.
-    - اگر داده‌ها یک رشته متنی هستند، آن را به شکلی زیبا در پاسخ خود بگنجان.
-    - اگر داده‌ها یک آبجکت با جزئیات هستند، آن‌ها را به صورت یک گزارش خوانا ارائه بده.
-    - اگر قصد کاربر "get_chart" بوده، به او بگو که نمودار در حال آماده‌سازی است (چون این اسکریپت فقط متن تولید می‌کند).
-    - پاسخ شما باید مستقیم و مرتبط با سوال کاربر باشد.
-    """
-    return call_gemini(generation_prompt, api_key)
+        raise ValueError(f"نتیجه GPT JSON معتبر نیست: {result_str}")

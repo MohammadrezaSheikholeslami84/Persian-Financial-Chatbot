@@ -11,6 +11,9 @@ def get_cryptocurrency_price_tgju(input_cryptocurrency):
     url = "https://www.tgju.org/crypto"
     headers = {"User-Agent": "Mozilla/5.0"}
 
+    if input_cryptocurrency == "بیتکوین":
+        input_cryptocurrency == "بیت کوین"
+
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
         print("Error fetching the page:", response.status_code)
@@ -109,7 +112,10 @@ def get_cryptocurrency_price_tgju(input_cryptocurrency):
 
 
 def get_history_cryptocurrency2(input_cryptocurrency):
-    
+
+    if input_cryptocurrency == "بیتکوین":
+        input_cryptocurrency == "بیت کوین"
+
     table_name = f"cryptocurrency_{input_cryptocurrency}"
     data_list = []
     price = ""
@@ -202,6 +208,11 @@ def get_history_cryptocurrency2(input_cryptocurrency):
 
 
 def get_cryptocurrency_change(input_dataframe,input_symbol, input_time):
+
+    if input_symbol == "بیتکوین":
+        input_symbol == "بیت کوین"
+
+
     try:
         gregorian_date = pd.to_datetime(input_time).date()
         shamsi_date_str = jdatetime.date.fromgregorian(date=gregorian_date).strftime("%Y/%m/%d")

@@ -72,13 +72,22 @@ def parse_persian_time(query_text: str):
         return text
 
     processed_text = convert_persian_words_to_numbers(processed_text)
-    pattern = re.compile(
-        r"(\d+)\s+(روز|هفته|ماه|سال)\s*(ی)*\s*(?:گذشته|پیش|اخیر)")
+    pattern = re.compile(r"(?:(\d+)\s*)?(روز|هفته|ماه|سال)\s*(?:‌? ?ی)?\s*(?:گذشته|پیش|اخیر)")
     match = pattern.search(processed_text)
 
+
     if match:
-        quantity = int(match.group(1))
+        quantity = match.group(1)
         unit = match.group(2)
+
+        if quantity is None:
+            quantity = 1
+
+        if quantity is None:
+            quantity = 1
+        else:
+            quantity = int(quantity)
+
 
         end_date = today
         if unit == "روز":
@@ -133,6 +142,8 @@ def clean_index_features(features):
 
 def extract_features(user_input):
     """Extract financial features from user input."""
+
+    #print(" The input to extract feature is : " , user_input)
     extracted_features = {"symbols": []}
 
     # --- Currency ---
@@ -271,22 +282,17 @@ def get_data_for_date(main_dataframe, date_str, currency_type, asset_name,unit =
 
 
 def process_request(user_input):
-
+    #print("User input in process request function : " , user_input)
     features = extract_features(user_input)
     print(features)  # برای دیباگ
+   # print(gmini.extract_features_with_gpt_fallback(user_input,features))
 
     full_history_df = None
-
     if features.get("type","") == "" or features.get("time","") == "":
+        #print(gmini.correct_text_with_gpt_api(user_input))
         return {"type": "text", "text": ""}
         #return gmini.rag_response(user_input,"")
-    #api_key = "AIzaSyCykh_9usou6lXPxrItJ4ajCB4BvWr6Nq0"
-    #print(gmini.call_gemini(user_input, api_key))
-    
-   # if api_key is not None:
-        #print(gmini.extract_features_with_gemini(user_input, api_key))
-  #  else:
-       # print("API key for Gemini is missing.")
+
 
     if not features["chart"] and not features.get("Compare_Command", False) :
         # ==================== Currency ====================
@@ -540,6 +546,7 @@ def process_request(user_input):
                     dataframe = database_store.get_closest_row_as_df(table_name, features["date"])
 
                 if features["Change_Command"] and not features["chart"]:
+                    print(dataframe.head())
                     text = cryptocurrency.get_cryptocurrency_change(dataframe, features["symbols"][0], features["date"])[0]
                     return {"type": "text", "text": text}
                 

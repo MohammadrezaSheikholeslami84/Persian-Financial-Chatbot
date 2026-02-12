@@ -6,7 +6,8 @@ import yaml
 import streamlit_authenticator as stauth
 from yaml.loader import SafeLoader
 from financial_core import process_request
-from gmini import rag_response
+import financial_core
+from gmini import chat_financial_assistant
 from io import BytesIO
 
 # ------------------------------
@@ -121,8 +122,8 @@ class App:
         </style>
         """, unsafe_allow_html=True)
 
-    def response_generator(self, user_input: str, bot_response_data: dict):
-        full_response = rag_response(user_input, bot_response_data.get("text", ""))
+    def response_generator(self, user_input: str,history_text: str):
+        full_response = chat_financial_assistant(user_input,history_text)
         for word in full_response.split():
             yield word + " "
             time.sleep(0.05)
@@ -179,10 +180,20 @@ class App:
         if user_input := st.chat_input("سوال خود را اینجا بنویسید..."):
             user_message = {"role": "user", "type": "text", "content": user_input}
             add_message(st.session_state.active_session, user_message)
+            with st.chat_message("user"):
+                st.markdown(user_input)
 
             if len(current_session_messages) == 0:
                 new_title = user_input[:35] + "..." if len(user_input) > 35 else user_input
                 update_session_title(st.session_state.active_session, new_title)
+
+
+            recent_messages = get_messages(st.session_state.active_session)[-5:]  # آخرین ۵ پیام
+            history_text = ""
+            for msg in recent_messages:
+                role_prefix = "کاربر:" if msg["role"] == "user" else "دستیار:"
+                content = msg.get("content", "")
+                history_text += f"{role_prefix} {content}\n"
 
             features = process_request(user_input)
             response_type = features.get("type")
@@ -190,16 +201,14 @@ class App:
             if response_type == "image":
                 response = {"role": "assistant", "type": "image", "image": features.get("image"), "caption": features.get("caption")}
                 add_message(st.session_state.active_session, response)
-            else:
-                # جمع کردن پاسخ متنی
-                response_text = "".join(list(self.response_generator(user_input, features)))
-                with st.chat_message("assistant"):
-                    # st.write_stream پاسخ را به صورت زنده نمایش داده و در نهایت کل متن را برمی‌گرداند
-                    full_response = st.write_stream(self.response_generator(user_input, features))
 
-                # ذخیره کل پاسخ در دیتابیس پس از نمایش کامل
+            else:
+                with st.chat_message("assistant"):
+                    full_response = st.write_stream(self.response_generator(user_input,history_text))
+
                 response = {"role": "assistant", "type": "text", "content": full_response}
                 add_message(st.session_state.active_session, response)
+
             st.rerun()
 
 
@@ -208,11 +217,11 @@ class App:
             config = yaml.load(file, Loader=SafeLoader)
 
         authenticator = stauth.Authenticate(
-        config['credentials'],
-        config['cookie']['name'],
-        config['cookie']['key'],
-        config['cookie']['expiry_days']
-    )
+            config['credentials'],
+            config['cookie']['name'],
+            config['cookie']['key'],
+            config['cookie']['expiry_days']
+        )
 
         # -------------------------
         # 📌 تب‌های اپلیکیشن
@@ -223,12 +232,19 @@ class App:
             # اول وضعیت ورود بررسی میشه
             if "authentication_status" not in st.session_state:
                 st.session_state["authentication_status"] = None
+            if "welcome_shown" not in st.session_state:
+                st.session_state["welcome_shown"] = False
 
             if st.session_state["authentication_status"]:
                 # ✅ کاربر وارد شده → رابط چت‌بات
                 name = st.session_state["name"]
                 username = st.session_state["username"]
-                st.success(f"سلام {name}! به چت‌بات مالی خوش آمدید 💬")
+
+                # پیام خوش‌آمد از ربات (فقط یک بار)
+                if not st.session_state["welcome_shown"]:
+                    st.session_state["welcome_shown"] = True
+                    st.info(f"🤖 سلام {name}! من ربات مالی شما هستم. آماده پاسخگویی به سوالات شما")
+
                 self.run_chatbot_interface(username, name, authenticator)
 
             else:
@@ -245,8 +261,7 @@ class App:
                         st.error(e)
 
                     if st.session_state.get("authentication_status"):
-                        authenticator.logout()
-                        st.success(f"سلام {st.session_state['name']}! به چت‌بات مالی خوش آمدید 💬")
+                        st.session_state["welcome_shown"] = False  # پیام خوش‌آمد بعد از لاگین
                         st.rerun()
                     elif st.session_state.get("authentication_status") is False:
                         st.error("نام کاربری یا رمز عبور اشتباه است")
@@ -268,6 +283,7 @@ class App:
                             st.session_state['authentication_status'] = True
                             st.session_state['username'] = username_of_registered_user
                             st.session_state['name'] = name_of_registered_user
+                            st.session_state["welcome_shown"] = False
                             st.rerun()
                         else:
                             st.warning("لطفا همه فیلدهای ثبت نام را پر کنید")
